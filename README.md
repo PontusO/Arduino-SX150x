@@ -3,10 +3,6 @@
 A library for the Semtech SX150x family of i2c GPIO expanders. SX150x is a family of i2c GPIO expanders with support for up to 16 extra pins, 2 voltage translation banks, and a simple PLD capability. This library covers the SX1501, SX1502, and SX1503.
 // TODO: needs class differentiation for 1501/1502, which are pin-count subsets of the 1503.
 
-#### [Hackaday.io Page](https://hackaday.io/project/168368-sx1503-breakout)
-
-#### [Order from Tindie](https://www.tindie.com/products/18522/)
-
 ------------------------
 
 ### Notes on driver features:
@@ -77,10 +73,3 @@ and to the hardware during `init()`.
 Invocation of `unserialize()` after a successful `init()` will immediately result
 in I/O as the new configuration is imparted, but the fields (if any) that are
 otherwise required for construction (pin assignments and i2c addresses) will be ignored.
-
-------------------------
-
-### Dependencies
-
-This class relies on [CppPotpourri](https://github.com/jspark311/CppPotpourri) for
-debugging output. This dependency can be eliminated by culling those functions.
