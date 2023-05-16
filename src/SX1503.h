@@ -7,8 +7,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-class StringBuilder;
-
 #define SX1503_I2C_ADDR           0x20  // Not configurable for SX1503.
 #define SX1503_SERIALIZE_VERSION  0x01  // Version code for serialized states.
 #define SX1503_SERIALIZE_SIZE       36
@@ -90,7 +88,7 @@ class SX1503 {
     int8_t refresh();
 
     // Basic usage as pins...
-    int8_t  gpioMode(uint8_t pin, int mode);
+    int8_t  pinMode(uint8_t pin, int mode);
     int8_t  digitalWrite(uint8_t pin, uint8_t value);
     uint8_t digitalRead(uint8_t pin);
     uint16_t getPinValues();
@@ -115,11 +113,6 @@ class SX1503 {
     inline void preserveOnDestroy(bool x) {
       _sx_set_flag(SX1503_FLAG_PRESERVE_STATE, x);
     };
-
-    // Debugging fxns. Mask out if debugging isn't desired.
-    void printDebug(StringBuilder*);
-    void printRegs(StringBuilder*);
-
 
   private:
     const uint8_t  _IRQ_PIN;

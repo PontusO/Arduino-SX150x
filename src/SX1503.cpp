@@ -2,7 +2,6 @@
 */
 
 #include "SX1503.h"
-#include <StringBuilder.h>
 
 /*******************************************************************************
 *      _______.___________.    ___   .___________. __    ______     _______.
@@ -106,13 +105,12 @@ int8_t SX1503::init(TwoWire* b) {
     int8_t ret = _write_register(SX1503_REG_DATA_B, &vals[0], 0x12);
     if (0 == ret) {  ret = _write_register(SX1503_REG_PLD_MODE_B, &vals[SX1503_REG_PLD_MODE_B], 0x0C);  }
     if (0 == ret) {  ret = _write_register(SX1503_REG_ADVANCED, &vals[SX1503_REG_ADVANCED], 1);  }
-      if (0 != ret) {
-        return -3;
-      }
+    if (0 != ret) {
+      return -3;
     }
-    ret = 0;
   }
-  else if (!preserveOnDestroy()) {
+  ret = 0;
+  if (!preserveOnDestroy()) {
     ret = reset();
   }
   else {
@@ -122,16 +120,15 @@ int8_t SX1503::init(TwoWire* b) {
   return ret;
 }
 
-
 int8_t SX1503::reset() {
   int8_t ret = -1;
   for (uint8_t i = 0; i < sizeof(registers); i++) {
     registers[i] = 0;
   }
   if (255 != _RESET_PIN) {
-    ::digitalWrite(_RESET_PIN, 0);
+    ::digitalWrite(_RESET_PIN, LOW);
     delay(1);   // Datasheet says 300ns.
-    ::digitalWrite(_RESET_PIN, 1);
+    ::digitalWrite(_RESET_PIN, HIGH);
     if (255 != _IRQ_PIN) {
       // Wait on the IRQ pin to go high.
       uint32_t millis_abort = millis() + 15;
@@ -292,6 +289,8 @@ int8_t SX1503::digitalWrite(uint8_t pin, uint8_t value) {
 */
 uint8_t SX1503::digitalRead(uint8_t pin) {
   uint8_t ret = 0;
+  // Pull both data registers.
+  _read_register(SX1503_REG_DATA_B, 2);
   if (pin < 8) {
     ret = (registers[SX1503_REG_DATA_A] >> pin) & 0x01;
   }
@@ -303,13 +302,15 @@ uint8_t SX1503::digitalRead(uint8_t pin) {
 
 
 uint16_t SX1503::getPinValues() {
-  uint16_t ret0 = (uint16_t) registers[0];
-  uint16_t ret1 = (uint16_t) registers[1];
+  // Pull both data registers
+  _read_register(SX1503_REG_DATA_B, 2);
+  uint16_t ret0 = (uint16_t) registers[SX1503_REG_DATA_B];
+  uint16_t ret1 = (uint16_t) registers[SX1503_REG_DATA_A];
   return (ret0 | (ret1 << 8));
 }
 
 
-int8_t SX1503::gpioMode(uint8_t pin, int mode) {
+int8_t SX1503::pinMode(uint8_t pin, int mode) {
   uint8_t ret = -1;
   if (pin < 16) {
     ret = 0;
@@ -435,12 +436,12 @@ int8_t SX1503::_read_register(uint8_t reg, uint8_t len) {
   int8_t ret = -1;
   if (nullptr != _bus) {
     _bus->beginTransmission((uint8_t) SX1503_I2C_ADDR);
-    _bus->send(SX1503_REG_ADDR[reg]);
+    _bus->write(SX1503_REG_ADDR[reg]);
     ret = (int8_t) _bus->endTransmission(false);
     if (0 == ret) {
       _bus->requestFrom((uint8_t) SX1503_I2C_ADDR, len);
       for (uint8_t i = 0; i < len; i++) {
-        registers[reg + i] = _bus->receive();
+        registers[reg + i] = _bus->read();
       }
       ret = _bus->endTransmission();
     }
@@ -518,30 +519,4 @@ int8_t SX1503::unserialize(const uint8_t* buf, const unsigned int len) {
     }
   }
   return (expected_sz == offset) ? 0 : -1;
-}
-
-
-/*******************************************************************************
-* Debugging fxns
-*******************************************************************************/
-/*
-*
-*/
-void SX1503::printDebug(StringBuilder* output) {
-  output->concat("---< SX1503 >---------------------------------------------------\n");
-  output->concatf("RESET Pin:   %u\n", _RESET_PIN);
-  output->concatf("IRQ Pin:     %u\n", _IRQ_PIN);
-  output->concatf("isr_fired:   %c\n", isr_fired ? 'y' : 'n');
-  output->concatf("Initialized: %c\n", initialized() ? 'y' : 'n');
-  output->concatf("Preserve:    %c\n", preserveOnDestroy() ? 'y' : 'n');
-}
-
-
-/*
-*
-*/
-void SX1503::printRegs(StringBuilder* output) {
-  for (uint8_t i = 0; i < sizeof(registers); i++) {
-    output->concatf("\t0x%02x:\t0x%02x", SX1503_REG_ADDR[i], registers[i]);
-  }
 }
